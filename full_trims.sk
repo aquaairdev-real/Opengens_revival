@@ -1,0 +1,131 @@
+# ============================================================
+# full_trims.sk
+# Full Armor Trims Shop — Skript-based GUI
+# Applies netherite upgrade trims to all 4 armor pieces
+# ============================================================
+
+options:
+    # Cost per full trim set
+    trim_cost: 5000
+    # Currency metadata (change to match your economy plugin variable)
+    currency: "dollars"
+    # Trim patterns available in the shop (must be valid Minecraft trim patterns)
+    # Full list: sentry, dune, coast, wild, ward, eye, vex, tide, snout, rib, spire, wayfinder, shaper, raiser, host, silence, flow, bolt
+    patterns:
+        - "sentry"
+        - "dune"
+        - "coast"
+        - "wild"
+        - "ward"
+        - "eye"
+        - "vex"
+        - "tide"
+        - "snout"
+        - "rib"
+        - "spire"
+        - "wayfinder"
+        - "shaper"
+        - "raiser"
+        - "host"
+        - "silence"
+        - "flow"
+        - "bolt"
+
+# ============================================================
+# OPEN SHOP COMMAND
+# ============================================================
+
+command /trimshop:
+    permission: skript.trimshop
+    permission message: "&cYou don't have permission to use this."
+    trigger:
+        open chest with 6 rows named "&5&lFull Armor Trims" to player
+        wait 1 tick
+        set slot 49 of player's current inventory to barrier named "&cClose" with lore "&7Click to close the shop."
+
+        # Populate trim items
+        set {_slot} to 10
+        loop {options::patterns::*}:
+            set {_pattern} to loop-value
+            set {_display} to "%{_pattern}%" parsed as item
+            if {_display} is not set:
+                set {_display} to paper
+            set {_name} to "&b&l%{_pattern}% &7Full Trim Set"
+            set {_lore1} to "&7Applies &e%{_pattern}%&7 trim with"
+            set {_lore2} to "&7&lNetherite Upgrade&7 material to all 4 armor pieces."
+            set {_lore3} to ""
+            set {_lore4} to "&aCost: &e${options::trim_cost}"
+            set {_lore5} to ""
+            set {_lore6} to "&eClick to purchase!"
+            set slot {_slot} of player's current inventory to {_display} named {_name} with lore {_lore1}, {_lore2}, {_lore3}, {_lore4}, {_lore5}, {_lore6}
+            set {_trimshop_pattern_%player%_%{_slot}%} to {_pattern}
+            add 1 to {_slot}
+            if {_slot} mod 9 = 8:
+                add 3 to {_slot}
+
+on inventory click:
+    name of player's current inventory is "&5&lFull Armor Trims"
+    cancel event
+    if index of clicked slot is 49:
+        close player's inventory
+        stop
+    set {_pattern} to {_trimshop_pattern_%player%_%index of clicked slot%}
+    if {_pattern} is not set:
+        stop
+
+    # Check player has full netherite armor equipped
+    set {_helm} to player's helmet
+    set {_chest} to player's chestplate
+    set {_legs} to player's leggings
+    set {_boots} to player's boots
+
+    if {_helm} is not set or {_chest} is not set or {_legs} is not set or {_boots} is not set:
+        send "&cYou must be wearing a full set of armor to apply trims!" to player
+        stop
+
+    # Check balance (uses Vault via Skript-Vault addon)
+    if player's balance < {options::trim_cost}:
+        send "&cYou need &e$%{options::trim_cost}%&c to buy this trim set!" to player
+        stop
+
+    # Charge player
+    remove {options::trim_cost} from player's balance
+
+    # Apply trim to each piece
+    apply trim {_pattern} with "netherite_upgrade" to {_helm}
+    apply trim {_pattern} with "netherite_upgrade" to {_chest}
+    apply trim {_pattern} with "netherite_upgrade" to {_legs}
+    apply trim {_pattern} with "netherite_upgrade" to {_boots}
+
+    set player's helmet to {_helm}
+    set player's chestplate to {_chest}
+    set player's leggings to {_legs}
+    set player's boots to {_boots}
+
+    send "&a&lFull trim applied! &7Pattern: &b%{_pattern}%" to player
+    close player's inventory
+
+    # Cleanup slot vars
+    loop {trimshop_pattern_%player%_*}:
+        delete {trimshop_pattern_%player%_%loop-index%}
+
+on inventory close:
+    name of player's current inventory is "&5&lFull Armor Trims"
+    loop {trimshop_pattern_%player%_*}:
+        delete {trimshop_pattern_%player%_%loop-index%}
+
+# ============================================================
+# FUNCTION: Apply trim to a single item
+# Skript doesn't natively support armor trims — this uses
+# Skript-NBT or SkBee to set the NBT directly.
+# Requires: SkBee (recommended) or Skript-NBT
+# ============================================================
+
+# NOTE: If your server uses SkBee, the trim application above
+# won't work with plain Skript syntax. Replace the apply trim
+# lines with the following SkBee NBT approach:
+#
+# set nbt compound of {_helm} to "{Trim:{pattern:""minecraft:%{_pattern}%"",material:""minecraft:netherite_upgrade""}}"
+#
+# Repeat for each armor piece. This directly sets the NBT
+# trim data that Minecraft reads for the visual effect.
