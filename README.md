@@ -43,7 +43,7 @@ This repository is an effort to bring it back as close to the original as possib
 
 ### Requirements
 
-- [Paper](https://papermc.io/) (1.20.x recommended)
+- [Paper](https://papermc.io/) (1.21.4 recommended and required)
 - [Skript](https://github.com/SkriptLang/Skript)
 - [SkBee](https://github.com/ShaneBeee/SkBee) — for armor trim NBT
 - [Skript-WorldGuard](https://github.com/Pikachu920/skript-worldguard) — for region detection
